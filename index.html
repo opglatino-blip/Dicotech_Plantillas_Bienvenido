@@ -86,16 +86,11 @@
   </section>
 
   <section class="contenido" id="error" hidden>
-    <h1>No pudimos registrar su solicitud</h1> 
+    <h1>No pudimos registrar su solicitud</h1>
     <p>Intente de nuevo desde el botón del correo de bienvenida. Si el problema continúa, escriba o llame a su ejecutivo con los datos de ese correo.</p>
     <p class="nota"><a href="https://www.dicotech.com.mx">Ir a dicotech.com.mx</a></p>
   </section>
 
-  <section class="contenido" id="invalido" hidden>
-    <h1>Este enlace no es válido</h1>
-    <p>Abra el botón “Quiero que me contacten” desde el correo de bienvenida que le enviamos.</p>
-    <p class="nota"><a href="https://www.dicotech.com.mx">Ir a dicotech.com.mx</a></p>
-  </section>
 
   <div class="pie">Grupo DICOTECH. Gracias por su confianza.</div>
 </main>
@@ -105,7 +100,7 @@
   var SEGUNDOS = 6;
 
   function mostrar(id) {
-    ["enviando", "ok", "error", "invalido"].forEach(function (s) {
+    ["enviando", "ok", "error"].forEach(function (s) {
       document.getElementById(s).hidden = (s !== id);
     });
   }
@@ -125,7 +120,8 @@
 
   async function enviar() {
     var correo = (new URLSearchParams(window.location.search).get("correo") || "").trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { mostrar("invalido"); return; }
+    // Si el enlace no viene de un correo (sin correo valido), se manda directo al sitio.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { window.location.replace(DESTINO); return; }
 
     // Si el cliente recarga la página en la misma sesión, no se repite la solicitud.
     var clave = "solicitud:" + correo;
