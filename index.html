@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Solicitud de contacto | DICOTECH</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  :root {
+    --negro: #000000;
+    --rojo: #D22630;
+    --texto: #222222;
+    --gris: #666666;
+    --fondo: #F4F5F7;
+    --papel: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 28px 12px;
+  }
+  main { width: 100%; max-width: 600px; background: var(--papel); }
+  .marca {
+    background: var(--negro);
+    padding: 32px 40px;
+    border-bottom: 5px solid var(--rojo);
+  }
+  .marca img { display: block; width: 424px; max-width: 100%; height: auto; margin: 0 auto; }
+  .contenido { padding: 40px; }
+  h1 { margin: 0 0 16px; font-size: 30px; line-height: 1.2; color: var(--negro); }
+  p { margin: 0 0 16px; max-width: 46ch; }
+  .nota { color: var(--gris); font-size: 15px; }
+  a { color: var(--rojo); font-weight: bold; white-space: nowrap; }
+  .barra { height: 4px; background: #E6E6E6; margin-top: 28px; overflow: hidden; }
+  .barra span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--rojo);
+    animation: llenar 6s linear forwards;
+  }
+  @keyframes llenar { to { width: 100%; } }
+  @media (prefers-reduced-motion: reduce) {
+    .barra span { animation: none; width: 100%; }
+  }
+  .pie {
+    background: var(--negro);
+    border-top: 4px solid var(--rojo);
+    color: #fff;
+    padding: 20px 40px;
+    font-size: 14px;
+  }
+  [hidden] { display: none !important; }
+  @media (max-width: 620px) {
+    .marca, .contenido, .pie { padding-left: 24px; padding-right: 24px; }
+    h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="marca"><img src="logo.png" width="424" height="82" alt="DICOTECH"></div>
+
+  <section class="contenido" id="enviando">
+    <h1>Enviando su solicitud</h1>
+    <p>Un momento, por favor.</p>
+  </section>
+
+  <section class="contenido" id="ok" hidden>
+    <h1>Gracias, ya avisamos a su ejecutivo</h1>
+    <p>Su ejecutivo de cuenta se pondrá en contacto con usted a la brevedad.</p>
+    <p class="nota">Lo llevaremos a dicotech.com.mx en <span id="segundos">6</span> segundos. <a href="https://www.dicotech.com.mx">Ir ahora</a></p>
+    <div class="barra" aria-hidden="true"><span></span></div>
+  </section>
+
+  <section class="contenido" id="error" hidden>
+    <h1>No pudimos registrar su solicitud</h1>
+    <p>Intente de nuevo desde el botón del correo de bienvenida. Si el problema continúa, escriba o llame a su ejecutivo con los datos de ese correo.</p>
+    <p class="nota"><a href="https://www.dicotech.com.mx">Ir a dicotech.com.mx</a></p>
+  </section>
+
+  <section class="contenido" id="invalido" hidden>
+    <h1>Este enlace no es válido</h1>
+    <p>Abra el botón “Quiero que me contacten” desde el correo de bienvenida que le enviamos.</p>
+    <p class="nota"><a href="https://www.dicotech.com.mx">Ir a dicotech.com.mx</a></p>
+  </section>
+
+  <div class="pie">Grupo DICOTECH. Gracias por su confianza.</div>
+</main>
+
+<script>
+  var DESTINO = "https://www.dicotech.com.mx";
+  var SEGUNDOS = 6;
+
+  function mostrar(id) {
+    ["enviando", "ok", "error", "invalido"].forEach(function (s) {
+      document.getElementById(s).hidden = (s !== id);
+    });
+  }
+
+  function cuentaRegresiva() {
+    var restantes = SEGUNDOS;
+    var etiqueta = document.getElementById("segundos");
+    var reloj = setInterval(function () {
+      restantes -= 1;
+      etiqueta.textContent = String(Math.max(restantes, 0));
+      if (restantes <= 0) {
+        clearInterval(reloj);
+        window.location.replace(DESTINO);
+      }
+    }, 1000);
+  }
+
+  async function enviar() {
+    var correo = (new URLSearchParams(window.location.search).get("correo") || "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { mostrar("invalido"); return; }
+
+    // Si el cliente recarga la página en la misma sesión, no se repite la solicitud.
+    var clave = "solicitud:" + correo;
+    var yaEnviada = false;
+    try { yaEnviada = sessionStorage.getItem(clave) === "1"; } catch (e) {}
+
+    if (!yaEnviada) {
+      try {
+        var r = await fetch("/api/contacto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ correo: correo })
+        });
+        if (!r.ok) { throw new Error("HTTP " + r.status); }
+        try { sessionStorage.setItem(clave, "1"); } catch (e) {}
+      } catch (e) {
+        mostrar("error");
+        return;
+      }
+    }
+
+    mostrar("ok");
+    cuentaRegresiva();
+  }
+
+  enviar();
+</script>
+</body>
+</html>
